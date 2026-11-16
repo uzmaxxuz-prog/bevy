@@ -44,7 +44,7 @@ impl RenderDeviceProfile {
         downlevel_flags: wgpu::DownlevelFlags,
     ) -> Self {
         let mode = match backend {
-            wgpu::Backend::Empty => return Self::default(),
+            wgpu::Backend::Noop => return Self::default(),
             wgpu::Backend::BrowserWebGpu => {
                 if downlevel_flags.contains(wgpu::DownlevelFlags::VIEW_FORMATS) {
                     RenderDeviceMode::BrowserCore
@@ -394,6 +394,17 @@ mod tests {
     #[test]
     fn unknown_profile_has_no_capabilities_and_is_not_browser_compatibility() {
         let profile = RenderDeviceProfile::default();
+        assert_eq!(profile.mode, RenderDeviceMode::Unknown);
+        assert_eq!(profile.downlevel_flags, wgpu::DownlevelFlags::empty());
+        assert!(!profile.is_webgpu_compatibility());
+    }
+
+    #[test]
+    fn noop_profile_has_no_capabilities_and_is_not_browser_compatibility() {
+        let profile = RenderDeviceProfile::from_backend(
+            wgpu::Backend::Noop,
+            wgpu::DownlevelFlags::VIEW_FORMATS,
+        );
         assert_eq!(profile.mode, RenderDeviceMode::Unknown);
         assert_eq!(profile.downlevel_flags, wgpu::DownlevelFlags::empty());
         assert!(!profile.is_webgpu_compatibility());
