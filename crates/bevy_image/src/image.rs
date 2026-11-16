@@ -1150,6 +1150,7 @@ impl Image {
             data: None,
             data_order: TextureDataOrder::default(),
             texture_descriptor: TextureDescriptor {
+                texture_binding_view_dimension: None,
                 size,
                 format,
                 dimension,
@@ -1277,6 +1278,7 @@ impl Image {
             data: Some(data),
             data_order: TextureDataOrder::default(),
             texture_descriptor: TextureDescriptor {
+                texture_binding_view_dimension: None,
                 size,
                 format,
                 dimension: TextureDimension::D2,

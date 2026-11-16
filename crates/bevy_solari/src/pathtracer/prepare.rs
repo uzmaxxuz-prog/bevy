@@ -28,6 +28,7 @@ pub fn prepare_pathtracer_accumulation_texture(
         };
 
         let descriptor = TextureDescriptor {
+            texture_binding_view_dimension: None,
             label: Some("pathtracer_accumulation_texture"),
             size: viewport.to_extents(),
             mip_level_count: 1,

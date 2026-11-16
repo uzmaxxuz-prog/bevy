@@ -1180,14 +1180,7 @@ fn get_fallback_image(
     dimension: BindingTextureDimension,
 ) -> proc_macro2::TokenStream {
     quote! {
-        match #render_path::render_resource::#dimension {
-            #render_path::render_resource::TextureViewDimension::D1 => &fallback_image.d1,
-            #render_path::render_resource::TextureViewDimension::D2 => &fallback_image.d2,
-            #render_path::render_resource::TextureViewDimension::D2Array => &fallback_image.d2_array,
-            #render_path::render_resource::TextureViewDimension::Cube => &fallback_image.cube,
-            #render_path::render_resource::TextureViewDimension::CubeArray => &fallback_image.cube_array,
-            #render_path::render_resource::TextureViewDimension::D3 => &fallback_image.d3,
-        }
+        fallback_image.get(#render_path::render_resource::#dimension)
     }
 }
 

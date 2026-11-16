@@ -113,6 +113,9 @@ impl SerializedImage {
                 format: image.texture_descriptor.format,
                 usage: image.texture_descriptor.usage,
                 view_formats: (),
+                texture_binding_view_dimension: image
+                    .texture_descriptor
+                    .texture_binding_view_dimension,
             },
             sampler: image.sampler,
             texture_view_descriptor: image.texture_view_descriptor.map(|descriptor| {
@@ -137,6 +140,9 @@ impl SerializedImage {
                 usage: self.texture_descriptor.usage,
                 // Not used for asset-based images
                 view_formats: &[],
+                texture_binding_view_dimension: self
+                    .texture_descriptor
+                    .texture_binding_view_dimension,
             },
             sampler: self.sampler,
             texture_view_descriptor: self
@@ -153,6 +159,28 @@ mod tests {
     use wgpu_types::{Extent3d, TextureDimension};
 
     use super::*;
+
+    #[test]
+    fn sampled_view_dimension_round_trips() {
+        for dimension in [
+            None,
+            Some(TextureViewDimension::D2Array),
+            Some(TextureViewDimension::Cube),
+        ] {
+            let mut image = Image::default();
+            image.texture_descriptor.texture_binding_view_dimension = dimension;
+            let serialized =
+                serde_json::to_string(&SerializedImage::from_image(image.clone())).unwrap();
+            let restored: SerializedImage = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(
+                restored
+                    .into_image()
+                    .texture_descriptor
+                    .texture_binding_view_dimension,
+                dimension
+            );
+        }
+    }
 
     #[test]
     fn serialize_deserialize_image() {

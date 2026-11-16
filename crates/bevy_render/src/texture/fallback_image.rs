@@ -29,21 +29,27 @@ pub struct FallbackImage {
     pub d2_array: GpuImage,
     /// Fallback image for [`TextureViewDimension::Cube`].
     pub cube: GpuImage,
-    /// Fallback image for [`TextureViewDimension::CubeArray`].
-    pub cube_array: GpuImage,
+    /// Fallback image for [`TextureViewDimension::CubeArray`], absent on devices without cube-array support.
+    pub cube_array: Option<GpuImage>,
     /// Fallback image for [`TextureViewDimension::D3`].
     pub d3: GpuImage,
 }
 
 impl FallbackImage {
     /// Returns the appropriate fallback image for the given texture dimension.
+    ///
+    /// # Panics
+    /// Panics if a cube array is requested on a device without cube-array support.
     pub fn get(&self, texture_dimension: TextureViewDimension) -> &GpuImage {
         match texture_dimension {
             TextureViewDimension::D1 => &self.d1,
             TextureViewDimension::D2 => &self.d2,
             TextureViewDimension::D2Array => &self.d2_array,
             TextureViewDimension::Cube => &self.cube,
-            TextureViewDimension::CubeArray => &self.cube_array,
+            TextureViewDimension::CubeArray => self
+                .cube_array
+                .as_ref()
+                .expect("CubeArray fallback requested without CUBE_ARRAY_TEXTURES support"),
             TextureViewDimension::D3 => &self.d3,
         }
     }
@@ -63,6 +69,15 @@ pub struct FallbackImageZero(GpuImage);
 /// use case is [`AsBindGroup`] implementations (such as materials) that support optional textures.
 #[derive(Resource, Deref)]
 pub struct FallbackImageCubemap(GpuImage);
+
+fn sampled_view_dimension(dimension: TextureViewDimension) -> Option<TextureViewDimension> {
+    match dimension {
+        TextureViewDimension::D2Array
+        | TextureViewDimension::Cube
+        | TextureViewDimension::CubeArray => Some(dimension),
+        _ => None,
+    }
+}
 
 fn fallback_image_new(
     render_device: &RenderDevice,
@@ -105,6 +120,7 @@ fn fallback_image_new(
         image
     };
     image.texture_descriptor.sample_count = samples;
+    image.texture_descriptor.texture_binding_view_dimension = sampled_view_dimension(dimension);
     if image_dimension == TextureDimension::D2 {
         image.texture_descriptor.usage |= TextureUsages::RENDER_ATTACHMENT;
     }
@@ -183,15 +199,20 @@ impl FromWorld for FallbackImage {
                 1,
                 255,
             ),
-            cube_array: fallback_image_new(
-                render_device,
-                render_queue,
-                default_sampler,
-                TextureFormat::Rgba8UnormSrgb,
-                TextureViewDimension::CubeArray,
-                1,
-                255,
-            ),
+            cube_array: render_device
+                .downlevel_flags()
+                .contains(wgpu::DownlevelFlags::CUBE_ARRAY_TEXTURES)
+                .then(|| {
+                    fallback_image_new(
+                        render_device,
+                        render_queue,
+                        default_sampler,
+                        TextureFormat::Rgba8UnormSrgb,
+                        TextureViewDimension::CubeArray,
+                        1,
+                        255,
+                    )
+                }),
             d3: fallback_image_new(
                 render_device,
                 render_queue,
@@ -268,5 +289,28 @@ impl<'w> FallbackImageMsaa<'w> {
                 255,
             )
         })
+    }
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn sampled_array_and_cube_views_are_declared_before_allocation() {
+        for dimension in [
+            TextureViewDimension::D2Array,
+            TextureViewDimension::Cube,
+            TextureViewDimension::CubeArray,
+        ] {
+            assert_eq!(sampled_view_dimension(dimension), Some(dimension));
+        }
+        for dimension in [
+            TextureViewDimension::D1,
+            TextureViewDimension::D2,
+            TextureViewDimension::D3,
+        ] {
+            assert_eq!(sampled_view_dimension(dimension), None);
+        }
     }
 }

@@ -433,6 +433,7 @@ fn prepare_screenshot_state(
     pipelines: &mut SpecializedRenderPipelines<ScreenshotToScreenPipeline>,
 ) -> (TextureView, ScreenshotPreparedState) {
     let texture = render_device.create_texture(&wgpu::TextureDescriptor {
+        texture_binding_view_dimension: None,
         label: Some("screenshot-capture-rendertarget"),
         size,
         mip_level_count: 1,

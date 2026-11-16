@@ -513,6 +513,7 @@ pub fn create_depth_pyramid_dummy_texture(
 ) -> TextureView {
     render_device
         .create_texture(&TextureDescriptor {
+            texture_binding_view_dimension: None,
             label: Some(texture_label),
             size: Extent3d::default(),
             mip_level_count: 1,
@@ -577,6 +578,7 @@ impl ViewDepthPyramid {
         let depth_pyramid = texture_cache.get(
             render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some(texture_label),
                 size: depth_pyramid_size,
                 mip_level_count: depth_pyramid_mip_count,

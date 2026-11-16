@@ -87,6 +87,7 @@ impl MorphTargetImage {
         let texture = render_device.create_texture_with_data(
             render_queue,
             &TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("morph target image"),
                 size: extents,
                 mip_level_count: 1,

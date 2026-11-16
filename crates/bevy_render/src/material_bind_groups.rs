@@ -1882,17 +1882,20 @@ impl MaterialBindlessSlab {
         required_binding_array_size: Option<u32>,
     ) {
         for (bindless_resource_type, fallback_image) in [
-            (BindlessResourceType::Texture1d, &fallback_image.d1),
-            (BindlessResourceType::Texture2d, &fallback_image.d2),
+            (BindlessResourceType::Texture1d, Some(&fallback_image.d1)),
+            (BindlessResourceType::Texture2d, Some(&fallback_image.d2)),
             (
                 BindlessResourceType::Texture2dArray,
-                &fallback_image.d2_array,
+                Some(&fallback_image.d2_array),
             ),
-            (BindlessResourceType::Texture3d, &fallback_image.d3),
-            (BindlessResourceType::TextureCube, &fallback_image.cube),
+            (BindlessResourceType::Texture3d, Some(&fallback_image.d3)),
+            (
+                BindlessResourceType::TextureCube,
+                Some(&fallback_image.cube),
+            ),
             (
                 BindlessResourceType::TextureCubeArray,
-                &fallback_image.cube_array,
+                fallback_image.cube_array.as_ref(),
             ),
         ] {
             // Skip texture types that this material doesn't use.
@@ -1903,6 +1906,10 @@ impl MaterialBindlessSlab {
                 continue;
             }
 
+            // Unsupported types have no fallback and no binding in the device layout.
+            let Some(fallback_image) = fallback_image else {
+                continue;
+            };
             let mut texture_bindings = vec![];
 
             let binding_number = bindless_resource_type

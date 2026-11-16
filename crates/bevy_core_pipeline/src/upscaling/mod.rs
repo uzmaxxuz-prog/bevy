@@ -94,6 +94,7 @@ fn prepare_view_upscaling_pipelines(
             blend_state,
             samples: 1,
             source_space: ResolvedCompositingSpace::space(resolved_space),
+            needs_srgb_encoding: view_target.needs_srgb_encoding(),
         };
 
         if maybe_pipeline.is_none_or(|ViewUpscalingPipeline(_, cached_key)| *cached_key != key) {

@@ -398,6 +398,7 @@ fn prepare_taa_history_textures(
     for (entity, view, camera) in &cameras {
         if let Some(physical_target_size) = camera.physical_target_size {
             let mut texture_descriptor = TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: None,
                 size: physical_target_size.to_extents(),
                 mip_level_count: 1,

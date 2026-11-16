@@ -809,6 +809,7 @@ fn get_mip_storage_view(
     // Otherwise, create a dummy texture and return a view to that.
 
     let dummy_texture = render_device.create_texture(&TextureDescriptor {
+        texture_binding_view_dimension: None,
         label: Some(&*format!(
             "mip downsampling dummy storage view {}/{}",
             level, gpu_image.texture_descriptor.mip_level_count

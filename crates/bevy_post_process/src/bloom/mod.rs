@@ -331,6 +331,7 @@ fn prepare_bloom_textures(
             };
 
             let texture_descriptor = TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("bloom_texture"),
                 size: (viewport.as_vec2() * mip_height_ratio)
                     .round()

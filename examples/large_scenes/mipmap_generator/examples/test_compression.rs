@@ -117,6 +117,7 @@ fn create_test_image(size: u32, cx: f32, cy: f32, channels: u32) -> Image {
 
     Image {
         texture_descriptor: TextureDescriptor {
+            texture_binding_view_dimension: None,
             label: None,
             size: Extent3d {
                 width: size,

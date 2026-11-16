@@ -62,9 +62,6 @@ use crate::{
     CLUSTERED_FORWARD_STORAGE_BUFFER_COUNT,
 };
 
-#[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
-use bevy_render::render_resource::binding_types::texture_cube;
-
 #[cfg(debug_assertions)]
 use {crate::MESH_PIPELINE_VIEW_LAYOUT_SAFE_MAX_TEXTURES, bevy_utils::once, tracing::warn};
 
@@ -250,6 +247,7 @@ fn layout_entries(
         irradiance_volume_entries,
         clustered_decal_entries,
         is_oit_supported,
+        cube_array_supported,
     }: &MeshPipelineViewLayoutParams,
 ) -> [Vec<BindGroupLayoutEntry>; 2] {
     let mut entries = DynamicBindGroupLayoutEntries::new_with_indices(
@@ -265,20 +263,11 @@ fn layout_entries(
             // Point Shadow Texture Cube Array
             (
                 2,
-                #[cfg(all(
-                    not(target_abi = "sim"),
-                    any(
-                        not(feature = "webgl"),
-                        not(target_arch = "wasm32"),
-                        feature = "webgpu"
-                    )
-                ))]
-                texture_cube_array(TextureSampleType::Depth),
-                #[cfg(any(
-                    target_abi = "sim",
-                    all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu"))
-                ))]
-                texture_cube(TextureSampleType::Depth),
+                if cube_array_supported {
+                    texture_cube_array(TextureSampleType::Depth)
+                } else {
+                    bevy_render::render_resource::binding_types::texture_cube(TextureSampleType::Depth)
+                },
             ),
             // Point Shadow Texture Array Comparison Sampler
             (3, sampler(SamplerBindingType::Comparison)),
@@ -533,6 +522,7 @@ struct MeshPipelineViewLayoutParams {
     irradiance_volume_entries: [BindGroupLayoutEntryBuilder; 2],
     clustered_decal_entries: Option<[BindGroupLayoutEntryBuilder; 3]>,
     is_oit_supported: bool,
+    cube_array_supported: bool,
 }
 
 /// Stores the view layouts entries for creating bind group layouts of pipeline keys.
@@ -553,6 +543,7 @@ pub fn init_mesh_pipeline_view_layouts(
 
     let res = MeshPipelineViewLayouts {
         params: Arc::new(MeshPipelineViewLayoutParams {
+            cube_array_supported: render_device.downlevel_flags().contains(wgpu_types::DownlevelFlags::CUBE_ARRAY_TEXTURES) && !cfg!(target_abi = "sim"),
             clustered_forward_buffer_binding_type,
             visibility_ranges_buffer_binding_type,
             environment_map_entries: environment_map::get_bind_group_layout_entries(

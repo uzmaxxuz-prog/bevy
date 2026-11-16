@@ -591,6 +591,7 @@ pub fn prepare_meshlet_per_frame_resources(
         let dummy_render_target = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("meshlet_dummy_render_target"),
                 size: view.viewport.zw().to_extents(),
                 mip_level_count: 1,
@@ -605,6 +606,7 @@ pub fn prepare_meshlet_per_frame_resources(
         let visibility_buffer = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("meshlet_visibility_buffer"),
                 size: view.viewport.zw().to_extents(),
                 mip_level_count: 1,
@@ -745,6 +747,7 @@ pub fn prepare_meshlet_per_frame_resources(
             .insert(view_entity, depth_pyramid.all_mips.clone());
 
         let material_depth = TextureDescriptor {
+            texture_binding_view_dimension: None,
             label: Some("meshlet_material_depth"),
             size: view.viewport.zw().to_extents(),
             mip_level_count: 1,

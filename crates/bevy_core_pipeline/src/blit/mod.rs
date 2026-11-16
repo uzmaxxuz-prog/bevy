@@ -90,6 +90,8 @@ pub struct BlitPipelineKey {
     /// Color space of the source texture. When `Some(Srgb)` or `Some(Oklab)`, the blit converts
     /// to linear RGB before writing to the output target.
     pub source_space: Option<CompositingSpace>,
+    /// Encode linear RGB for a window without an sRGB surface view.
+    pub needs_srgb_encoding: bool,
 }
 
 impl SpecializedRenderPipeline for BlitPipeline {
@@ -97,6 +99,9 @@ impl SpecializedRenderPipeline for BlitPipeline {
 
     fn specialize(&self, key: Self::Key) -> RenderPipelineDescriptor {
         let mut shader_defs = Vec::new();
+        if key.needs_srgb_encoding {
+            shader_defs.push("LINEAR_TO_SRGB".into());
+        }
         match key.source_space {
             Some(CompositingSpace::Srgb) => shader_defs.push("SRGB_TO_LINEAR".into()),
             Some(CompositingSpace::Oklab) => shader_defs.push("OKLAB_TO_LINEAR".into()),

@@ -1167,7 +1167,11 @@ pub fn prepare_lights(
         not(target_arch = "wasm32"),
         feature = "webgpu"
     ))]
-    let max_texture_cubes = max_texture_array_layers / 6;
+    let max_texture_cubes = if render_device.downlevel_flags().contains(wgpu_types::DownlevelFlags::CUBE_ARRAY_TEXTURES) && !cfg!(target_abi = "sim") {
+        max_texture_array_layers / 6
+    } else {
+        1
+    };
     #[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
     let max_texture_array_layers = 1;
     #[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
@@ -1481,9 +1485,15 @@ pub fn prepare_lights(
     let mut directional_light_depth_attachments =
         HashMap::<u32, DepthStencilViewAttachment>::default();
 
+    let point_shadow_dimension = if render_device.downlevel_flags().contains(wgpu_types::DownlevelFlags::CUBE_ARRAY_TEXTURES) && !cfg!(target_abi = "sim") {
+        TextureViewDimension::CubeArray
+    } else {
+        TextureViewDimension::Cube
+    };
     let point_light_depth_texture = texture_cache.get(
         &render_device,
         TextureDescriptor {
+            texture_binding_view_dimension: Some(point_shadow_dimension),
             size: Extent3d {
                 width: point_light_shadow_map.size as u32,
                 height: point_light_shadow_map.size as u32,
@@ -1505,22 +1515,7 @@ pub fn prepare_lights(
             .create_view(&TextureViewDescriptor {
                 label: Some("point_light_shadow_map_array_texture_view"),
                 format: None,
-                // NOTE: iOS Simulator is missing CubeArray support so we use Cube instead.
-                // See https://github.com/bevyengine/bevy/pull/12052 - remove if support is added.
-                #[cfg(all(
-                    not(target_abi = "sim"),
-                    any(
-                        not(feature = "webgl"),
-                        not(target_arch = "wasm32"),
-                        feature = "webgpu"
-                    )
-                ))]
-                dimension: Some(TextureViewDimension::CubeArray),
-                #[cfg(any(
-                    target_abi = "sim",
-                    all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu"))
-                ))]
-                dimension: Some(TextureViewDimension::Cube),
+                dimension: Some(point_shadow_dimension),
                 usage: None,
                 aspect: TextureAspect::DepthOnly,
                 base_mip_level: 0,
@@ -1532,6 +1527,7 @@ pub fn prepare_lights(
     let directional_light_depth_texture = texture_cache.get(
         &render_device,
         TextureDescriptor {
+            texture_binding_view_dimension: Some(if cfg!(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu"))) { TextureViewDimension::D2 } else { TextureViewDimension::D2Array }),
             size: Extent3d {
                 width: (directional_light_shadow_map.size as u32)
                     .min(render_device.limits().max_texture_dimension_2d),

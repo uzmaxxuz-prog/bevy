@@ -209,6 +209,7 @@ impl RenderAsset for GpuAutoExposureCompensationCurve {
         let texture = render_device.create_texture_with_data(
             render_queue,
             &TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: None,
                 size: Extent3d {
                     width: LUT_SIZE as u32,

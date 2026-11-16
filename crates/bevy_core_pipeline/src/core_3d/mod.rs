@@ -704,6 +704,7 @@ pub fn prepare_core_3d_depth_textures(
                     .expect("The depth texture usage should already exist for this target");
 
                 let descriptor = TextureDescriptor {
+                    texture_binding_view_dimension: None,
                     label: Some("view_depth_texture"),
                     // The size of the depth texture
                     size: physical_target_size.to_extents(),
@@ -833,6 +834,7 @@ pub fn prepare_prepass_textures(
                 .entry(camera.target.clone())
                 .or_insert_with(|| {
                     let descriptor = TextureDescriptor {
+                        texture_binding_view_dimension: None,
                         label: Some("prepass_depth_texture_1"),
                         size,
                         mip_level_count: 1,
@@ -854,6 +856,7 @@ pub fn prepare_prepass_textures(
                 .entry(camera.target.clone())
                 .or_insert_with(|| {
                     let descriptor = TextureDescriptor {
+                        texture_binding_view_dimension: None,
                         label: Some("prepass_depth_texture_2"),
                         size,
                         mip_level_count: 1,
@@ -877,6 +880,7 @@ pub fn prepare_prepass_textures(
                     texture_cache.get(
                         &render_device,
                         TextureDescriptor {
+                            texture_binding_view_dimension: None,
                             label: Some("prepass_normal_texture"),
                             size,
                             mip_level_count: 1,
@@ -899,6 +903,7 @@ pub fn prepare_prepass_textures(
                     texture_cache.get(
                         &render_device,
                         TextureDescriptor {
+                            texture_binding_view_dimension: None,
                             label: Some("prepass_motion_vectors_textures"),
                             size,
                             mip_level_count: 1,
@@ -926,6 +931,7 @@ pub fn prepare_prepass_textures(
                     texture_cache.get(
                         &render_device,
                         TextureDescriptor {
+                            texture_binding_view_dimension: None,
                             label: Some("prepass_deferred_texture_1"),
                             size,
                             mip_level_count: 1,
@@ -948,6 +954,7 @@ pub fn prepare_prepass_textures(
                     texture_cache.get(
                         &render_device,
                         TextureDescriptor {
+                            texture_binding_view_dimension: None,
                             label: Some("prepass_deferred_texture_2"),
                             size,
                             mip_level_count: 1,
@@ -970,6 +977,7 @@ pub fn prepare_prepass_textures(
                     texture_cache.get(
                         &render_device,
                         TextureDescriptor {
+                            texture_binding_view_dimension: None,
                             label: Some("deferred_lighting_pass_id_texture"),
                             size,
                             mip_level_count: 1,

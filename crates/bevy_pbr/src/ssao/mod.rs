@@ -314,6 +314,7 @@ impl FromWorld for SsaoPipelines {
             .create_texture_with_data(
                 render_queue,
                 &(TextureDescriptor {
+                    texture_binding_view_dimension: None,
                     label: Some("ssao_hilbert_index_lut"),
                     size: Extent3d {
                         width: HILBERT_WIDTH as u32,
@@ -546,6 +547,7 @@ fn prepare_ssao_textures(
         let preprocessed_depth_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("ssao_preprocessed_depth_texture"),
                 size,
                 mip_level_count: 5,
@@ -560,6 +562,7 @@ fn prepare_ssao_textures(
         let ssao_noisy_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("ssao_noisy_texture"),
                 size,
                 mip_level_count: 1,
@@ -574,6 +577,7 @@ fn prepare_ssao_textures(
         let ssao_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("ssao_texture"),
                 size,
                 mip_level_count: 1,
@@ -588,6 +592,7 @@ fn prepare_ssao_textures(
         let depth_differences_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("ssao_depth_differences_texture"),
                 size,
                 mip_level_count: 1,

@@ -81,6 +81,7 @@ fn native_driver_cache_and_worker_compilation() {
         .get_render_pipeline(render)
         .expect("worker render pipeline");
     let target = device.create_texture(&TextureDescriptor {
+        texture_binding_view_dimension: None,
         label: None,
         size: Extent3d {
             width: 1,

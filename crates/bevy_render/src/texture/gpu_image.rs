@@ -23,6 +23,14 @@ pub struct GpuImage {
     pub had_data: bool,
 }
 
+fn declare_sampled_view_dimension(image: &mut Image) {
+    if image.texture_descriptor.texture_binding_view_dimension.is_none() {
+        image.texture_descriptor.texture_binding_view_dimension = image.texture_view_descriptor.as_ref()
+            .and_then(|view| view.dimension)
+            .filter(|dimension| matches!(dimension, wgpu::TextureViewDimension::D2Array | wgpu::TextureViewDimension::Cube | wgpu::TextureViewDimension::CubeArray));
+    }
+}
+
 impl RenderAsset for GpuImage {
     type SourceAsset = Image;
     type Param = (
@@ -61,11 +69,12 @@ impl RenderAsset for GpuImage {
 
     /// Converts the extracted image into a [`GpuImage`].
     fn prepare_asset(
-        image: Self::SourceAsset,
+        mut image: Self::SourceAsset,
         _: AssetId<Self::SourceAsset>,
         (render_device, render_queue, default_sampler): &mut SystemParamItem<Self::Param>,
         previous_asset: Option<&Self>,
     ) -> Result<Self, PrepareAssetError<Self::SourceAsset>> {
+        declare_sampled_view_dimension(&mut image);
         let had_data = image.data.is_some();
         let texture = if let Some(prev) = previous_asset
             && prev.texture_descriptor == image.texture_descriptor
@@ -210,5 +219,20 @@ impl GpuImage {
             .as_ref()
             .and_then(|view_desc| view_desc.format)
             .unwrap_or(self.texture_descriptor.format)
+    }
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn image_sampled_view_is_declared_before_upload() {
+        for dimension in [wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube] {
+            let mut image = Image::default();
+            image.texture_view_descriptor = Some(TextureViewDescriptor { dimension: Some(dimension), ..Default::default() });
+            declare_sampled_view_dimension(&mut image);
+            assert_eq!(image.texture_descriptor.texture_binding_view_dimension, Some(dimension));
+        }
     }
 }

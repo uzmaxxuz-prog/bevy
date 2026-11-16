@@ -76,6 +76,7 @@ pub fn prepare_core_3d_transmission_textures(
                 let usage = TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
 
                 let descriptor = TextureDescriptor {
+                    texture_binding_view_dimension: None,
                     label: Some("view_transmission_texture"),
                     // The size of the transmission texture
                     size: physical_target_size.to_extents(),

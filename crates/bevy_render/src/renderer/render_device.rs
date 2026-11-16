@@ -15,10 +15,61 @@ wgpu_wrapper! {
     struct WgpuDevice(wgpu::Device);
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RenderDeviceMode {
+    Unknown,
+    Native,
+    BrowserCore,
+    BrowserCompatibility,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct RenderDeviceProfile {
+    mode: RenderDeviceMode,
+    downlevel_flags: wgpu::DownlevelFlags,
+}
+
+impl Default for RenderDeviceProfile {
+    fn default() -> Self {
+        Self {
+            mode: RenderDeviceMode::Unknown,
+            downlevel_flags: wgpu::DownlevelFlags::empty(),
+        }
+    }
+}
+
+impl RenderDeviceProfile {
+    pub(crate) fn from_backend(
+        backend: wgpu::Backend,
+        downlevel_flags: wgpu::DownlevelFlags,
+    ) -> Self {
+        let mode = match backend {
+            wgpu::Backend::Empty => return Self::default(),
+            wgpu::Backend::BrowserWebGpu => {
+                if downlevel_flags.contains(wgpu::DownlevelFlags::VIEW_FORMATS) {
+                    RenderDeviceMode::BrowserCore
+                } else {
+                    RenderDeviceMode::BrowserCompatibility
+                }
+            }
+            _ => RenderDeviceMode::Native,
+        };
+        Self {
+            mode,
+            downlevel_flags,
+        }
+    }
+
+    pub(crate) fn is_webgpu_compatibility(self) -> bool {
+        self.mode == RenderDeviceMode::BrowserCompatibility
+    }
+}
+
 /// This GPU device is responsible for the creation of most rendering and compute resources.
 #[derive(Resource, Clone)]
 pub struct RenderDevice {
     device: WgpuDevice,
+    profile: RenderDeviceProfile,
 }
 
 impl From<wgpu::Device> for RenderDevice {
@@ -28,10 +79,39 @@ impl From<wgpu::Device> for RenderDevice {
 }
 
 impl RenderDevice {
+    /// Wraps a device with an unknown profile and empty downlevel capabilities.
+    ///
+    /// Without its matching adapter, browser compatibility cannot be identified. Normal
+    /// renderer installation resolves the profile from that adapter before cloning this resource.
     pub fn new(device: wgpu::Device) -> Self {
         Self {
             device: WgpuDevice::new(device),
+            profile: RenderDeviceProfile::default(),
         }
+    }
+
+    /// Returns the actual adapter downlevel capabilities, or no capabilities for an unknown adapter.
+    pub fn downlevel_flags(&self) -> wgpu::DownlevelFlags {
+        self.profile.downlevel_flags
+    }
+
+    /// Returns whether the selected device uses the browser WebGPU compatibility profile.
+    ///
+    /// Global shader and MSAA policies must use this rather than infer a mode from resource
+    /// capability bits. Native backends and unknown raw devices return false; an unknown
+    /// device still has empty downlevel flags for conservative independent resource policies.
+    pub fn is_webgpu_compatibility(&self) -> bool {
+        self.profile.is_webgpu_compatibility()
+    }
+
+    /// The adapter must be the one that created this device.
+    pub(crate) fn set_adapter_profile(&mut self, adapter: &wgpu::Adapter) {
+        // The pinned WebGPU backend reports adapter/device-coherent capabilities:
+        // request_device automatically selects core mode when the adapter offers it.
+        self.profile = RenderDeviceProfile::from_backend(
+            adapter.get_info().backend,
+            adapter.get_downlevel_capabilities().flags,
+        );
     }
 
     /// List all [`Features`](wgpu::Features) that may be used with this device.
@@ -310,6 +390,14 @@ impl RenderDevice {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unknown_profile_has_no_capabilities_and_is_not_browser_compatibility() {
+        let profile = RenderDeviceProfile::default();
+        assert_eq!(profile.mode, RenderDeviceMode::Unknown);
+        assert_eq!(profile.downlevel_flags, wgpu::DownlevelFlags::empty());
+        assert!(!profile.is_webgpu_compatibility());
+    }
 
     #[test]
     fn align_copy_bytes_per_row() {

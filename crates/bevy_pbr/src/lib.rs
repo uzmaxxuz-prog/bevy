@@ -448,6 +448,7 @@ pub fn stbn_placeholder() -> Image {
         data: Some(data),
         data_order: TextureDataOrder::default(),
         texture_descriptor: TextureDescriptor {
+            texture_binding_view_dimension: None,
             size: Extent3d::default(),
             format,
             dimension: TextureDimension::D2,
@@ -471,6 +472,7 @@ pub fn area_light_luts_placeholder() -> Image {
         data: Some(data),
         data_order: TextureDataOrder::default(),
         texture_descriptor: TextureDescriptor {
+            texture_binding_view_dimension: Some(wgpu_types::TextureViewDimension::D2Array),
             size: Extent3d {
                 width: 1,
                 height: 1,
