@@ -141,6 +141,7 @@ fn prepare_msaa_writeback_pipelines(
                 samples: msaa.samples(),
                 blend_state: None,
                 source_space: None,
+                needs_srgb_encoding: false,
             };
 
             let pipeline = pipelines.specialize(&pipeline_cache, &blit_pipeline, key);

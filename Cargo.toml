@@ -5812,3 +5812,12 @@ bevy_pbr = { path = "crates/bevy_pbr" }
 bevy_core_pipeline = { path = "crates/bevy_core_pipeline" }
 bevy_sprite_render = { path = "crates/bevy_sprite_render" }
 bevy_ui_render = { path = "crates/bevy_ui_render" }
+
+# Keep the renderer and shader compiler on the compatibility-capable wgpu revision.
+[patch.crates-io]
+naga = { git = "https://github.com/uzmaxxuz-prog/wgpu", rev = "c880820fa5853137c913c7df9b4861b0f2cd6842" }
+wgpu = { git = "https://github.com/uzmaxxuz-prog/wgpu", rev = "c880820fa5853137c913c7df9b4861b0f2cd6842" }
+wgpu-core = { git = "https://github.com/uzmaxxuz-prog/wgpu", rev = "c880820fa5853137c913c7df9b4861b0f2cd6842" }
+wgpu-hal = { git = "https://github.com/uzmaxxuz-prog/wgpu", rev = "c880820fa5853137c913c7df9b4861b0f2cd6842" }
+wgpu-types = { git = "https://github.com/uzmaxxuz-prog/wgpu", rev = "c880820fa5853137c913c7df9b4861b0f2cd6842" }
+wgpu-naga-bridge = { git = "https://github.com/uzmaxxuz-prog/wgpu", rev = "c880820fa5853137c913c7df9b4861b0f2cd6842" }

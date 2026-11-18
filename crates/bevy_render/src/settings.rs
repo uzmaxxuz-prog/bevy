@@ -187,7 +187,8 @@ impl RenderResources {
         render_world: &mut World,
         synchronous_pipeline_compilation: bool,
     ) {
-        let RenderResources(device, queue, adapter_info, render_adapter, instance, ..) = self;
+        let RenderResources(mut device, queue, adapter_info, render_adapter, instance, ..) = self;
+        device.set_adapter_profile(&render_adapter);
 
         let compressed_image_format_support =
             CompressedImageFormatSupport(CompressedImageFormats::from_features(device.features()));
@@ -228,6 +229,9 @@ pub enum RenderCreation {
 
 impl RenderCreation {
     /// Function to create a [`RenderCreation::Manual`] variant.
+    ///
+    /// The adapter must be the one that created the device, so installation can resolve
+    /// its actual backend profile and independent resource capabilities coherently.
     pub fn manual(
         device: RenderDevice,
         queue: RenderQueue,

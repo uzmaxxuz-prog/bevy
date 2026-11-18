@@ -444,6 +444,7 @@ pub fn prepare_core_2d_depth_textures(
             .entry(camera.target.clone())
             .or_insert_with(|| {
                 let descriptor = TextureDescriptor {
+                    texture_binding_view_dimension: None,
                     label: Some("view_depth_texture"),
                     // The size of the depth texture
                     size: physical_target_size.to_extents(),

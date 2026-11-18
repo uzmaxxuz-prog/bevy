@@ -29,7 +29,7 @@ use crate::{
     GpuResourceAppExt, Render, RenderApp, RenderSystems,
 };
 use alloc::sync::{Arc, Weak};
-use bevy_app::{App, Plugin};
+use bevy_app::{App, First, Plugin, PostUpdate};
 use bevy_color::{LinearRgba, Oklaba, Srgba};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
@@ -171,6 +171,8 @@ pub struct ViewPlugin;
 
 impl Plugin for ViewPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(First, enforce_compatibility_msaa)
+            .add_systems(PostUpdate, enforce_compatibility_msaa.before(bevy_camera::CameraUpdateSystems));
         app
             // NOTE: windows.is_changed() handles cases where a window was resized
             .add_plugins((
@@ -189,6 +191,12 @@ impl Plugin for ViewPlugin {
             render_app.add_systems(
                 Render,
                 (
+                    enforce_compatibility_msaa
+                        .after(RenderSystems::ExtractCommands)
+                        .before(RenderSystems::PrepareAssets)
+                        .before(RenderSystems::PrepareMeshes)
+                        .before(RenderSystems::CreateViews)
+                        .before(RenderSystems::Specialize),
                     resolve_composition_spaces.in_set(ResolveCompositingSpaces),
                     // `TextureView`s need to be dropped before reconfiguring window surfaces.
                     clear_view_attachments
@@ -218,6 +226,23 @@ impl Plugin for ViewPlugin {
             render_app
                 .init_gpu_resource::<ViewUniforms>()
                 .init_gpu_resource::<ViewTargetAttachments>();
+        }
+    }
+}
+
+fn msaa_for_device(is_webgpu_compatibility: bool, msaa: Msaa) -> Msaa {
+    if is_webgpu_compatibility { Msaa::Off } else { msaa }
+}
+
+fn enforce_compatibility_msaa(
+    device: Option<Res<RenderDevice>>,
+    mut views: Query<&mut Msaa>,
+) {
+    let Some(device) = device else { return; };
+    for mut msaa in &mut views {
+        let supported = msaa_for_device(device.is_webgpu_compatibility(), *msaa);
+        if *msaa != supported {
+            *msaa = supported;
         }
     }
 }
@@ -790,6 +815,7 @@ pub struct ViewTarget {
     main_texture: Arc<AtomicUsize>,
     /// The final output attachment this view will present to, if available.
     out_texture: Option<OutputColorAttachment>,
+    needs_srgb_encoding: bool,
 }
 
 /// Contains [`OutputColorAttachment`] used for each target present on any view in the current
@@ -903,6 +929,11 @@ impl From<ColorGrading> for ColorGradingUniform {
 pub struct NoIndirectDrawing;
 
 impl ViewTarget {
+    /// Whether the final window output needs shader sRGB encoding instead of an sRGB view.
+    pub fn needs_srgb_encoding(&self) -> bool {
+        self.needs_srgb_encoding
+    }
+
     /// Retrieve this target's main texture's color attachment.
     pub fn get_color_attachment(&self) -> RenderPassColorAttachment<'_> {
         if self.main_texture.load(Ordering::SeqCst) == 0 {
@@ -1398,6 +1429,14 @@ fn main_texture_key(
     )
 }
 
+fn output_needs_srgb_encoding(
+    target: Option<&NormalizedRenderTarget>,
+    output_format: Option<TextureFormat>,
+) -> bool {
+    matches!(target, Some(NormalizedRenderTarget::Window(_)))
+        && matches!(output_format, Some(TextureFormat::Rgba8Unorm | TextureFormat::Bgra8Unorm))
+}
+
 pub fn prepare_view_targets(
     mut commands: Commands,
     clear_color_global: Res<ClearColor>,
@@ -1457,6 +1496,7 @@ pub fn prepare_view_targets(
         let key = main_texture_key(camera, view, texture_usage, *msaa);
         let (a, b, sampled, main_texture) = textures.entry(key.clone()).or_insert_with(|| {
             let descriptor = TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: None,
                 size: target_size.to_extents(),
                 mip_level_count: 1,
@@ -1465,6 +1505,7 @@ pub fn prepare_view_targets(
                 format: main_texture_format,
                 usage: texture_usage.0,
                 view_formats: match main_texture_format {
+                    _ if !render_device.downlevel_flags().contains(wgpu::DownlevelFlags::VIEW_FORMATS) => &[],
                     TextureFormat::Bgra8Unorm => &[TextureFormat::Bgra8UnormSrgb],
                     TextureFormat::Rgba8Unorm => &[TextureFormat::Rgba8UnormSrgb],
                     _ => &[],
@@ -1488,6 +1529,7 @@ pub fn prepare_view_targets(
                 let sampled = texture_cache.get(
                     &render_device,
                     TextureDescriptor {
+                        texture_binding_view_dimension: None,
                         label: Some("main_texture_sampled"),
                         size: target_size.to_extents(),
                         mip_level_count: 1,
@@ -1529,6 +1571,52 @@ pub fn prepare_view_targets(
             main_textures,
             main_texture_format,
             out_texture: out_attachment.cloned(),
+            needs_srgb_encoding: output_needs_srgb_encoding(camera.target.as_ref(), out_attachment.map(|attachment| attachment.view_format)),
         });
+    }
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn compatibility_disables_msaa_without_changing_core() {
+        use crate::renderer::RenderDeviceProfile;
+
+        let cases = [
+            (wgpu::Backend::Gl, wgpu::DownlevelFlags::empty(), false),
+            (wgpu::Backend::BrowserWebGpu, wgpu::DownlevelFlags::empty(), true),
+            (wgpu::Backend::BrowserWebGpu, wgpu::DownlevelFlags::VIEW_FORMATS, false),
+        ];
+        for (backend, flags, compatibility) in cases {
+            let profile = RenderDeviceProfile::from_backend(backend, flags);
+            assert_eq!(profile.is_webgpu_compatibility(), compatibility);
+            for msaa in [Msaa::Off, Msaa::Sample2, Msaa::Sample4, Msaa::Sample8] {
+                let expected = if compatibility { Msaa::Off } else { msaa };
+                assert_eq!(msaa_for_device(profile.is_webgpu_compatibility(), msaa), expected);
+            }
+        }
+        assert_eq!(
+            msaa_for_device(RenderDeviceProfile::default().is_webgpu_compatibility(), Msaa::Sample4),
+            Msaa::Sample4,
+        );
+    }
+
+    #[test]
+    fn only_unorm_window_outputs_need_srgb_encoding() {
+        let window = NormalizedRenderTarget::Window(bevy_window::WindowRef::Entity(Entity::PLACEHOLDER).normalize(None).unwrap());
+        for format in [TextureFormat::Rgba8Unorm, TextureFormat::Bgra8Unorm] {
+            assert!(output_needs_srgb_encoding(Some(&window), Some(format)));
+            let image = NormalizedRenderTarget::Image(bevy_camera::ImageRenderTarget { handle: Default::default(), scale_factor: 1.0 });
+            let manual = NormalizedRenderTarget::TextureView(bevy_camera::ManualTextureViewHandle(0));
+            assert!(!output_needs_srgb_encoding(Some(&image), Some(format)));
+            assert!(!output_needs_srgb_encoding(Some(&manual), Some(format)));
+            assert!(!output_needs_srgb_encoding(None, Some(format)));
+        }
+        for format in [TextureFormat::Rgba8UnormSrgb, TextureFormat::Bgra8UnormSrgb, TextureFormat::Rgba16Float, TextureFormat::Rgb10a2Unorm] {
+            assert!(!output_needs_srgb_encoding(Some(&window), Some(format)));
+        }
+        assert!(!output_needs_srgb_encoding(Some(&window), None));
     }
 }

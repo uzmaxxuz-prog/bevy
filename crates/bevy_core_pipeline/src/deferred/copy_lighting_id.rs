@@ -152,6 +152,7 @@ fn prepare_deferred_lighting_id_textures(
     for (entity, camera) in &views {
         if let Some(physical_target_size) = camera.physical_target_size {
             let texture_descriptor = TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("deferred_lighting_id_depth_texture_a"),
                 size: physical_target_size.to_extents(),
                 mip_level_count: 1,

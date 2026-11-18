@@ -79,8 +79,7 @@ pub struct ExtractedWindow {
     pub swap_chain_texture_view: Option<TextureView>,
     pub swap_chain_texture: Option<SurfaceTexture>,
     pub swap_chain_texture_format: Option<TextureFormat>,
-    /// This is an srgb view of [`ExtractedWindow::swap_chain_texture_format`]
-    /// so that in shaders we are always in linear space.
+    /// The configured surface format, or its sRGB view when surface view formats are supported.
     pub swap_chain_texture_view_format: Option<TextureFormat>,
     pub size_changed: bool,
     pub present_mode_changed: bool,
@@ -108,8 +107,8 @@ impl ExtractedWindow {
         self.swap_chain_texture = None;
     }
 
-    fn set_swapchain_texture(&mut self, frame: wgpu::SurfaceTexture) {
-        self.swap_chain_texture_view_format = Some(frame.texture.format().add_srgb_suffix());
+    fn set_swapchain_texture(&mut self, frame: wgpu::SurfaceTexture, surface: &SurfaceData) {
+        self.swap_chain_texture_view_format = Some(surface.texture_view_format.unwrap_or(surface.configuration.format));
         let texture_view_descriptor = TextureViewDescriptor {
             format: self.swap_chain_texture_view_format,
             ..default()
@@ -277,7 +276,7 @@ impl SurfaceData {
         format: TextureFormat,
         color_space: wgpu::SurfaceColorSpace,
     ) {
-        self.texture_view_format = srgb_view_format(format);
+        self.texture_view_format = surface_view_format(format, render_device.downlevel_flags());
         self.configuration.format = format;
         self.configuration.color_space = color_space;
         self.configuration.view_formats = self.texture_view_format.into_iter().collect();
@@ -287,9 +286,32 @@ impl SurfaceData {
     }
 }
 
+fn surface_view_format(format: TextureFormat, flags: wgpu::DownlevelFlags) -> Option<TextureFormat> {
+    flags.contains(wgpu::DownlevelFlags::SURFACE_VIEW_FORMATS).then(|| srgb_view_format(format)).flatten()
+}
+
 /// The sRGB view format shaders render through, when it differs from a non-sRGB `format`.
 fn srgb_view_format(format: TextureFormat) -> Option<TextureFormat> {
-    (!format.is_srgb()).then(|| format.add_srgb_suffix())
+    let srgb = format.add_srgb_suffix();
+    (srgb != format).then_some(srgb)
+}
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn unsupported_surface_views_are_omitted() {
+        assert_eq!(surface_view_format(TextureFormat::Rgba8Unorm, wgpu::DownlevelFlags::empty()), None);
+        assert_eq!(surface_view_format(TextureFormat::Rgba8Unorm, wgpu::DownlevelFlags::SURFACE_VIEW_FORMATS), Some(TextureFormat::Rgba8UnormSrgb));
+    }
+
+    #[test]
+    fn only_reinterpretable_formats_get_an_alternate_view() {
+        assert_eq!(srgb_view_format(TextureFormat::Rgba8Unorm), Some(TextureFormat::Rgba8UnormSrgb));
+        assert_eq!(srgb_view_format(TextureFormat::Rgba8UnormSrgb), None);
+        assert_eq!(srgb_view_format(TextureFormat::Rgba16Float), None);
+    }
 }
 
 /// (re)configures window surfaces, and obtains a swapchain texture for rendering.
@@ -388,7 +410,7 @@ pub fn prepare_windows(
         match result {
             wgpu::CurrentSurfaceTexture::Success(surface_texture)
             | wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
-                window.set_swapchain_texture(surface_texture);
+                window.set_swapchain_texture(surface_texture, &surface_data);
             }
             #[cfg(target_os = "linux")]
             wgpu::CurrentSurfaceTexture::Timeout if may_erroneously_timeout() => {
@@ -486,7 +508,7 @@ pub fn create_surfaces(
                 }
             }
 
-            let texture_view_format = srgb_view_format(format);
+            let texture_view_format = surface_view_format(format, render_device.downlevel_flags());
             let configuration = SurfaceConfiguration {
                 format,
                 width: window.physical_width,

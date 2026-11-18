@@ -150,6 +150,7 @@ fn cause_error(error: If<Res<RenderError>>, device: Res<RenderDevice>, queue: Re
             let mut textures = Vec::new();
             for _ in 0..64 {
                 textures.push(device.create_texture(&TextureDescriptor {
+                    texture_binding_view_dimension: None,
                     label: None,
                     size: Extent3d {
                         width: 8192,

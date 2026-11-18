@@ -333,6 +333,7 @@ impl Plugin for SmaaPlugin {
                 data: Some(data),
                 data_order: TextureDataOrder::default(),
                 texture_descriptor: TextureDescriptor {
+                    texture_binding_view_dimension: None,
                     size: Extent3d::default(),
                     format,
                     dimension: TextureDimension::D2,
@@ -697,6 +698,7 @@ fn prepare_smaa_textures(
         let edge_detection_color_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("SMAA edge detection color texture"),
                 size: texture_size.to_extents(),
                 mip_level_count: 1,
@@ -712,6 +714,7 @@ fn prepare_smaa_textures(
         let edge_detection_stencil_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("SMAA edge detection stencil texture"),
                 size: texture_size.to_extents(),
                 mip_level_count: 1,
@@ -728,6 +731,7 @@ fn prepare_smaa_textures(
         let blend_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("SMAA blend texture"),
                 size: texture_size.to_extents(),
                 mip_level_count: 1,

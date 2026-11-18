@@ -481,6 +481,7 @@ pub fn prepare_auxiliary_depth_of_field_textures(
 
         // The texture matches the main view target texture.
         let texture_descriptor = TextureDescriptor {
+            texture_binding_view_dimension: None,
             label: Some("depth of field auxiliary texture"),
             size: view_target.main_texture().size(),
             mip_level_count: 1,

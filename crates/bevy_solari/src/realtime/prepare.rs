@@ -249,6 +249,7 @@ pub fn prepare_solari_lighting_resources(
         #[cfg(all(feature = "dlss", not(feature = "force_disable_dlss")))]
         if has_dlss_rr {
             let diffuse_albedo = render_device.create_texture(&TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("solari_lighting_diffuse_albedo"),
                 size: view_size.to_extents(),
                 mip_level_count: 1,
@@ -261,6 +262,7 @@ pub fn prepare_solari_lighting_resources(
             let diffuse_albedo_view = diffuse_albedo.create_view(&TextureViewDescriptor::default());
 
             let specular_albedo = render_device.create_texture(&TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("solari_lighting_specular_albedo"),
                 size: view_size.to_extents(),
                 mip_level_count: 1,
@@ -274,6 +276,7 @@ pub fn prepare_solari_lighting_resources(
                 specular_albedo.create_view(&TextureViewDescriptor::default());
 
             let normal_roughness = render_device.create_texture(&TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("solari_lighting_normal_roughness"),
                 size: view_size.to_extents(),
                 mip_level_count: 1,
@@ -287,6 +290,7 @@ pub fn prepare_solari_lighting_resources(
                 normal_roughness.create_view(&TextureViewDescriptor::default());
 
             let dlss_rr_depth = render_device.create_texture(&TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("solari_lighting_dlss_rr_depth"),
                 size: view_size.to_extents(),
                 mip_level_count: 1,
@@ -299,6 +303,7 @@ pub fn prepare_solari_lighting_resources(
             let dlss_rr_depth_view = dlss_rr_depth.create_view(&TextureViewDescriptor::default());
 
             let specular_motion_vectors = render_device.create_texture(&TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("solari_lighting_specular_motion_vectors"),
                 size: view_size.to_extents(),
                 mip_level_count: 1,

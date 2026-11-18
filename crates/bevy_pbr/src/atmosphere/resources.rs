@@ -404,6 +404,7 @@ pub(super) fn prepare_atmosphere_textures(
         let transmittance_lut = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("transmittance_lut"),
                 size: lut_settings.transmittance_lut_size.to_extents(),
                 mip_level_count: 1,
@@ -418,6 +419,7 @@ pub(super) fn prepare_atmosphere_textures(
         let multiscattering_lut = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("multiscattering_lut"),
                 size: lut_settings.multiscattering_lut_size.to_extents(),
                 mip_level_count: 1,
@@ -432,6 +434,7 @@ pub(super) fn prepare_atmosphere_textures(
         let sky_view_lut = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("sky_view_lut"),
                 size: lut_settings.sky_view_lut_size.to_extents(),
                 mip_level_count: 1,
@@ -446,6 +449,7 @@ pub(super) fn prepare_atmosphere_textures(
         let aerial_view_lut = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("aerial_view_lut"),
                 size: lut_settings.aerial_view_lut_size.to_extents(),
                 mip_level_count: 1,

@@ -353,6 +353,7 @@ fn generate_random_compressed_texture_with_mipmaps(size: u32, bc4: bool, seed: u
 
     Image {
         texture_descriptor: TextureDescriptor {
+            texture_binding_view_dimension: None,
             label: None,
             size: Extent3d {
                 width: size,

@@ -421,6 +421,7 @@ pub fn lut_placeholder() -> Image {
         data: Some(data),
         data_order: TextureDataOrder::default(),
         texture_descriptor: TextureDescriptor {
+            texture_binding_view_dimension: None,
             size: Extent3d::default(),
             format,
             dimension: TextureDimension::D3,

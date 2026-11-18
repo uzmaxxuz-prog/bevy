@@ -133,6 +133,7 @@ impl RenderAsset for GpuScatteringMedium {
         let density_lut = render_device.create_texture_with_data(
             render_queue,
             &TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: source_asset
                     .label
                     .as_deref()
@@ -168,6 +169,7 @@ impl RenderAsset for GpuScatteringMedium {
         let scattering_lut = render_device.create_texture_with_data(
             render_queue,
             &TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: source_asset
                     .label
                     .as_deref()

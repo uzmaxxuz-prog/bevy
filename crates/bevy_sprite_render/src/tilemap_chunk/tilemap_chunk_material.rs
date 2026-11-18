@@ -98,6 +98,7 @@ pub fn make_chunk_tile_data_image(size: &UVec2, data: &[PackedTileData]) -> Imag
         data: Some(bytemuck::cast_slice(data).to_vec()),
         data_order: TextureDataOrder::default(),
         texture_descriptor: TextureDescriptor {
+            texture_binding_view_dimension: None,
             size: size.to_extents(),
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba16Uint,

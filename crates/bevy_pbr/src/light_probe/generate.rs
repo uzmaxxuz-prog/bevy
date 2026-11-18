@@ -416,6 +416,7 @@ pub fn prepare_generated_environment_map_intermediate_textures(
         let environment_map = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: Some(wgpu_types::TextureViewDimension::D2Array),
                 label: Some("intermediate_environment_map"),
                 size: Extent3d {
                     width: base_size,
@@ -726,6 +727,7 @@ fn create_storage_view(texture: &Texture, mip: u32, _render_device: &RenderDevic
 /// bindings in the same bind-group never alias.
 fn create_placeholder_storage_view(render_device: &RenderDevice) -> TextureView {
     let tex = render_device.create_texture(&TextureDescriptor {
+        texture_binding_view_dimension: Some(wgpu_types::TextureViewDimension::D2Array),
         label: Some("lightprobe_placeholder"),
         size: Extent3d {
             width: 1,

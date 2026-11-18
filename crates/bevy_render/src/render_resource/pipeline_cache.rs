@@ -259,13 +259,17 @@ impl PipelineCache {
         #[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
         {
             global_shader_defs.push("NO_ARRAY_TEXTURES_SUPPORT".into());
-            global_shader_defs.push("NO_CUBE_ARRAY_TEXTURES_SUPPORT".into());
             global_shader_defs.push("SIXTEEN_BYTE_ALIGNMENT".into());
         }
 
-        if cfg!(target_abi = "sim") {
-            global_shader_defs.push("NO_CUBE_ARRAY_TEXTURES_SUPPORT".into());
-        }
+        global_shader_defs.push(ShaderDefVal::Bool(
+            "NO_CUBE_ARRAY_TEXTURES_SUPPORT".into(),
+            !device.downlevel_flags().contains(wgpu::DownlevelFlags::CUBE_ARRAY_TEXTURES) || cfg!(target_abi = "sim"),
+        ));
+        global_shader_defs.push(ShaderDefVal::Bool(
+            "WEBGPU_COMPATIBILITY".into(),
+            device.is_webgpu_compatibility(),
+        ));
 
         let available_storage_buffer_bindings =
             device.limits().max_storage_buffers_per_shader_stage;

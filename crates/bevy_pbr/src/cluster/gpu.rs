@@ -1440,6 +1440,7 @@ fn prepare_cluster_dummy_textures(
         let dummy_texture = texture_cache.get(
             &render_device,
             TextureDescriptor {
+                texture_binding_view_dimension: None,
                 label: Some("clustering dummy texture"),
                 // We round these up to the nearest multiple of 32 to guard
                 // against the risk of thrashing between different sizes,
